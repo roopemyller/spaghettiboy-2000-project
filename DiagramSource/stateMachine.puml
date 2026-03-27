@@ -1,0 +1,29 @@
+@startuml stateMachine
+
+
+state Start{
+    [*] --> Hero
+    Hero : laitteen nimi ja tiedot
+}
+
+
+State Main{
+    Hero -down-> Telemetry : left button
+    Hero -down-> Snake_Game : right button
+
+    Telemetry -> Snake_Game : right button
+    Snake_Game -> Telemetry : left button
+}
+
+state Exit_state <<join>>
+
+State Exit{
+    Hero --> Exit_state
+    Telemetry --> Exit_state 
+    Snake_Game --> Exit_state 
+    Exit_state --> [*] : power off
+}
+
+
+
+@enduml
