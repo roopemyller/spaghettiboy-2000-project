@@ -5,7 +5,7 @@
 // If your exact OLED controller/wiring differs, adjust the constructor below.
 
 #include <Arduino.h>
-#include "U8x8lib.h"
+#include <U8x8lib.h>
 
 // -----------------------------
 // Pin configuration
