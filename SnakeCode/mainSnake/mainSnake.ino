@@ -1,9 +1,8 @@
 /*
-  Snake for ATmega328P (Arduino Uno/Nano) + 128x64 I2C OLED (SSD1306)
+  Snake for ATmega328P (Arduino Uno/Nano) + 128x64 I2C OLED.
 
   Libraries (Arduino Library Manager):
-  - Adafruit SSD1306
-  - Adafruit GFX Library
+  - U8g2 (uses U8x8lib API)
 
   Wiring (recommended: use internal pullups, buttons to GND):
   - OLED VCC -> 5V (or 3.3V if your module requires), GND -> GND
@@ -15,22 +14,17 @@
       RIGHT -> D5
 
   Notes:
-  - Uses a grid of 4x4 pixel cells => 32x16 grid on 128x64.
-  - Game speed increases slightly as you grow.
+  - U8x8 is character-cell based (8x8 cells on 128x64).
+  - Game uses a 16x8 text grid (one character per snake segment).
 */
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <U8x8lib.h>
 
 // ---------------- Display ----------------
-static const uint8_t OLED_W = 128;
-static const uint8_t OLED_H = 64;
-static const uint8_t OLED_RESET = 255; // no reset pin (most I2C modules)
 static const uint8_t OLED_ADDR = 0x3C; // common; sometimes 0x3D
-
-Adafruit_SSD1306 display(OLED_W, OLED_H, &Wire, OLED_RESET);
+U8X8_SSD1306_128X64_NONAME_HW_I2C display(U8X8_PIN_NONE);
 
 // ---------------- Controls ----------------
 static const uint8_t PIN_UP = 2;
@@ -39,9 +33,8 @@ static const uint8_t PIN_LEFT = 4;
 static const uint8_t PIN_RIGHT = 5;
 
 // ---------------- Game grid ----------------
-static const uint8_t CELL = 4;                 // pixels per grid cell
-static const uint8_t GRID_W = OLED_W / CELL;   // 32
-static const uint8_t GRID_H = OLED_H / CELL;   // 16
+static const uint8_t GRID_W = 16;              // 128 / 8
+static const uint8_t GRID_H = 8;               // 64 / 8
 static const uint16_t MAX_LEN = (uint16_t)GRID_W * (uint16_t)GRID_H; // 512
 
 // Snake body positions (0..31, 0..15)
@@ -232,71 +225,42 @@ static void stepGame() {
   }
 }
 
-static void drawCell(uint8_t gx, uint8_t gy, bool filled) {
-  int16_t px = (int16_t)gx * CELL;
-  int16_t py = (int16_t)gy * CELL;
-  if (filled) {
-    display.fillRect(px, py, CELL, CELL, SSD1306_WHITE);
-  } else {
-    display.drawRect(px, py, CELL, CELL, SSD1306_WHITE);
-  }
+static void drawCell(uint8_t gx, uint8_t gy, char ch) {
+  display.setCursor(gx, gy);
+  display.print(ch);
 }
 
 static void renderPlay() {
-  display.clearDisplay();
+  display.clear();
 
-  // Food (outlined so it differs from body)
-  drawCell(foodX, foodY, false);
+  // Food
+  drawCell(foodX, foodY, '@');
 
   // Snake
   for (uint16_t i = 0; i < snakeLen; i++) {
-    drawCell(snakeX[i], snakeY[i], true);
+    drawCell(snakeX[i], snakeY[i], '#');
   }
-
-  // Score in top-left as small text overlay (doesn't fit grid perfectly but ok)
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print(F("Len:"));
-  display.print(snakeLen);
-
-  display.display();
 }
 
 static void renderSplash() {
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
-
-  display.setTextSize(2);
-  display.setCursor(20, 12);
+  display.clear();
+  display.setCursor(5, 1);
   display.print(F("SNAKE"));
-
-  display.setTextSize(1);
-  display.setCursor(12, 40);
-  display.print(F("Press any button"));
-  display.setCursor(18, 52);
+  display.setCursor(0, 4);
+  display.print(F("Press any btn"));
+  display.setCursor(2, 6);
   display.print(F("to start"));
-
-  display.display();
 }
 
 static void renderGameOver() {
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
-
-  display.setTextSize(2);
-  display.setCursor(8, 8);
+  display.clear();
+  display.setCursor(3, 1);
   display.print(F("GAME OVER"));
-
-  display.setTextSize(1);
-  display.setCursor(22, 34);
-  display.print(F("Length: "));
+  display.setCursor(3, 4);
+  display.print(F("Length:"));
   display.print(snakeLen);
-
-  display.setCursor(10, 52);
-  display.print(F("Press to restart"));
-
-  display.display();
+  display.setCursor(0, 6);
+  display.print(F("Press restart"));
 }
 
 static bool anyButtonPressedRaw() {
@@ -311,12 +275,11 @@ void setup() {
   pinMode(PIN_RIGHT, INPUT_PULLUP);
 
   Wire.begin();
-  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    // If OLED init fails, just halt (common causes: wrong address, wiring)
-    for (;;) { delay(50); }
-  }
-  display.clearDisplay();
-  display.display();
+  display.setI2CAddress((uint8_t)(OLED_ADDR << 1));
+  display.begin();
+  display.setPowerSave(0);
+  display.setFont(u8x8_font_chroma48medium8_r);
+  display.clear();
 
   randomSeed((uint32_t)analogRead(A0) ^ ((uint32_t)micros() << 16));
 
