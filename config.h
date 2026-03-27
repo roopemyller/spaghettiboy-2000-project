@@ -5,8 +5,11 @@
 
 // Pins
 constexpr uint8_t PIN_LDR = A0;
-constexpr uint8_t PIN_BUTTON_MODE = 2;
 constexpr uint8_t PIN_STATUS_LED = LED_BUILTIN;
+
+constexpr uint8_t PIN_BTN_LEFT  = 2;
+constexpr uint8_t PIN_BTN_RIGHT = 3;
+
 
 // I2C
 constexpr uint8_t OLED_ADDR = 0x3C;

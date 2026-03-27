@@ -1,14 +1,23 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <Adafruit_SSD1306.h>
-#include <Adafruit_GFX.h>
+
+#include <U8g2lib.h>
 #include "config.h"
 
-extern Adafruit_SSD1306 oled;
+enum AppState : uint8_t {
+	UI_SPLASH = 0,
+	UI_INFO   = 1,
+	UI_GAME   = 2
+};
+
+extern U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2;
 
 void initOled();
-void drawEnvScreen(float temperatureC, float humidityPct, int lightRaw);
+void renderSplash();
+void renderInfo();
+void renderGame();
+void renderCurrentState(AppState state);
 void drawDebugScreen(bool sensorOk);
 void updateDisplayBrightness(int lightRaw);
 
