@@ -44,8 +44,7 @@ void handleNavigation() {
     case UI_SPLASH:
       if (leftEdge) {
         setState(UI_INFO);
-      }
-      if (rightEdge) {
+      } else if (rightEdge) {
         setState(UI_GAME);
       }
       break;
@@ -53,13 +52,18 @@ void handleNavigation() {
     case UI_INFO:
       if (leftEdge) {
         setState(UI_SPLASH);
+      } else if (rightEdge) {
+        setState(UI_GAME);
       }
       break;
 
     case UI_GAME:
       if (rightEdge) {
         setState(UI_SPLASH);
+      } else if (leftEdge) {
+        setState(UI_INFO);
       }
+      
       break;
   }
 }
@@ -94,33 +98,4 @@ void loop() {
   }
 
   updateDisplayBrightness(lightRaw);
-
-
-  /*
-  if (state == BOOT) {
-    digitalWrite(PIN_STATUS_LED, (now / 200) % 2);
-    oled.clearDisplay();
-    oled.setTextSize(1);
-    oled.setTextColor(SSD1306_WHITE);
-    oled.setCursor(0, 0);
-    oled.println(F("Booting..."));
-    oled.display();
-
-    if (now - bootStartMs > 1200) {
-      state = SHOW_ENV;
-    }
-    return;
-  }
-
-  if (now - lastReadMs >= READ_INTERVAL_MS) {
-    readSensors();
-    lastReadMs = now;
-  }
-
-  digitalWrite(PIN_STATUS_LED, HIGH);
-
-  if (state == SHOW_ENV) {
-    drawEnvScreen(temperatureC, humidityPct, lightRaw);
-  }
-  */
 }
