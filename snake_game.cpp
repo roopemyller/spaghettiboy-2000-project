@@ -252,7 +252,7 @@ static void renderSplash() {
   display.setCursor(2, 5);
   display.print(F("btn to start"));
   display.setCursor(1, 7);
-  display.print(F("<RIGHT><LEFT>"));
+  display.print(F("<LEFT><RIGHT>"));
 }
 
 static void renderGameOver() {
