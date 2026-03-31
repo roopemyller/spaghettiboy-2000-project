@@ -1,25 +1,27 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <U8x8lib.h>
+#include <U8g2lib.h>
 
 #include "config.h"
+#include "display.h"
 
 /*
   Snake game module for ATmega328P + 128x64 OLED.
   This module keeps all game logic in one translation unit and is driven from UI_GAME.
+  Uses shared U8G2 display with double-buffering for flicker-free rendering.
 */
 
 namespace {
 
-// ---------------- Display ----------------
-U8X8_SSD1306_128X64_NONAME_HW_I2C display(U8X8_PIN_NONE);
+// Use the shared U8G2 display from display.cpp (extern declared in display.h)
+// No need to create a separate display object
 
 // ---------------- Controls ----------------
 // Keep existing project navigation pins for splash/info, add two dedicated game buttons.
-static const uint8_t PIN_UP = PIN_BTN_LEFT;
-static const uint8_t PIN_DOWN = PIN_BTN_RIGHT;
-static const uint8_t PIN_LEFT = PIN_BTN_GAME_LEFT;
-static const uint8_t PIN_RIGHT = PIN_BTN_GAME_RIGHT;
+static const uint8_t PIN_LEFT = PIN_BTN_LEFT;
+static const uint8_t PIN_RIGHT = PIN_BTN_RIGHT;
+static const uint8_t PIN_UP = PIN_BTN_GAME_UP;
+static const uint8_t PIN_DOWN = PIN_BTN_GAME_DOWN;
 
 // ---------------- Game grid ----------------
 static const uint8_t GRID_W = 16;                                 // 128 / 8
@@ -146,7 +148,7 @@ static bool startButtonPressedRaw() {
 }
 
 static void updateExitRequest(uint32_t nowMs) {
-  const bool dualPressed = readPressedRaw(PIN_UP) && readPressedRaw(PIN_DOWN);
+  const bool dualPressed = readPressedRaw(PIN_LEFT) && readPressedRaw(PIN_RIGHT);
   if (dualPressed) {
     if (dualHoldStartMs == 0) {
       dualHoldStartMs = nowMs;
@@ -234,40 +236,48 @@ static void renderPlay() {
   char score[8];
   const uint16_t points = (snakeLen >= 3) ? (snakeLen - 3) : 0;
 
-  display.clear();
-  snprintf(score, sizeof(score), "S:%u", points);
-  display.drawString(0, 0, score);
-  display.drawString(foodX, foodY, "@");
-  for (uint16_t i = 0; i < snakeLen; i++) {
-    display.drawString(snakeX[i], snakeY[i], "#");
-  }
+  // Use firstPage/nextPage mode to match main UI rendering
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_chroma48medium8_8r);
+    
+    // Draw score at top
+    snprintf(score, sizeof(score), "S:%u", points);
+    u8g2.drawStr(0, 7, score);
+    
+    // Draw food at grid position (grid cells are 8x8 pixels)
+    u8g2.drawStr(foodX * 8, foodY * 8, "@");
+    
+    // Draw snake body
+    for (uint16_t i = 0; i < snakeLen; i++) {
+      u8g2.drawStr(snakeX[i] * 8, snakeY[i] * 8, "#");
+    }
+  } while (u8g2.nextPage());
 }
 
-static void renderSplash() {
-  display.clear();
-  display.setCursor(5, 1);
-  display.print(F("SNAKE"));
-  display.setCursor(0, 3);
-  display.print(F("Press any middle"));
-  display.setCursor(2, 5);
-  display.print(F("btn to start"));
-  display.setCursor(1, 7);
-  display.print(F("<LEFT><RIGHT>"));
+static void renderGameSplash() {
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    drawCenteredText(12, "SNAKE");
+    drawCenteredText(28, "Press any middle");
+    drawCenteredText(40, "btn to start");
+    drawCenteredText(62, "<LEFT> <RIGHT>");
+  } while (u8g2.nextPage());
 }
 
 static void renderGameOver() {
   char scoreLine[18];
   snprintf(scoreLine, sizeof(scoreLine), "Length:%u", snakeLen);
 
-  display.clear();
-  display.setCursor(4, 1);
-  display.print(F("GAME OVER"));
-  display.setCursor(4, 3);
-  display.print(scoreLine);
-  display.setCursor(0, 5);
-  display.print(F("Press middle btn"));
-  display.setCursor(3, 7);
-  display.print(F("to restart"));
+  u8g2.firstPage();
+  do {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    drawCenteredText(12, "GAME OVER");
+    drawCenteredText(28, scoreLine);
+    drawCenteredText(40, "Press middle btn");
+    drawCenteredText(56, "to restart");
+  } while (u8g2.nextPage());
 }
 
 } // namespace
@@ -277,12 +287,6 @@ void initSnakeGame() {
   pinMode(PIN_DOWN, INPUT_PULLUP);
   pinMode(PIN_LEFT, INPUT_PULLUP);
   pinMode(PIN_RIGHT, INPUT_PULLUP);
-
-  display.setI2CAddress((uint8_t)(OLED_ADDR << 1));
-  display.begin();
-  display.setPowerSave(0);
-  display.setFont(u8x8_font_chroma48medium8_r);
-  display.clear();
 
   randomSeed((uint32_t)analogRead(PIN_LDR) ^ ((uint32_t)micros() << 16));
 
@@ -299,6 +303,11 @@ void snakeGameOnEnter() {
   exitRequested = false;
   dualHoldStartMs = 0;
   clearButtonEdges();
+  
+  // Wait for all buttons to be released before allowing game input
+  while (anyButtonPressedRaw()) {
+    delay(10);
+  }
 }
 
 void snakeGameTick(uint32_t nowMs) {
@@ -308,15 +317,21 @@ void snakeGameTick(uint32_t nowMs) {
   switch (state) {
     case STATE_SPLASH:
       if (needsRender) {
-        renderSplash();
+        renderGameSplash();
         needsRender = false;
       }
-      if (startButtonPressedRaw()) {
-        while (startButtonPressedRaw()) { delay(10); }
+      // Update button debouncing first
+      updateButton(btnUp, nowMs);
+      updateButton(btnDown, nowMs);
+      updateButton(btnLeft, nowMs);
+      updateButton(btnRight, nowMs);
+      // Check for edge BEFORE clearing
+      if (pressedEdge(btnUp) || pressedEdge(btnDown)) {
         resetGame();
         state = STATE_PLAY;
         needsRender = true;
       }
+      clearButtonEdges();
       delay(20);
       break;
 
@@ -341,12 +356,18 @@ void snakeGameTick(uint32_t nowMs) {
         renderGameOver();
         needsRender = false;
       }
-      if (startButtonPressedRaw()) {
-        while (startButtonPressedRaw()) { delay(10); }
+      // Update button debouncing first
+      updateButton(btnUp, nowMs);
+      updateButton(btnDown, nowMs);
+      updateButton(btnLeft, nowMs);
+      updateButton(btnRight, nowMs);
+      // Check for edge BEFORE clearing
+      if (pressedEdge(btnUp) || pressedEdge(btnDown)) {
         resetGame();
         state = STATE_PLAY;
         needsRender = true;
       }
+      clearButtonEdges();
       delay(20);
       break;
   }
@@ -369,7 +390,7 @@ bool snakeGameAllowUiNavigation() {
 }
 
 void snakeGameSetPowerSave(bool enabled) {
-  display.setPowerSave(enabled ? 1 : 0);
+  u8g2.setPowerSave(enabled ? 1 : 0);
   if (!enabled) {
     needsRender = true;
   }

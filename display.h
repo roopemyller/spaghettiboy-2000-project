@@ -14,6 +14,7 @@ enum AppState : uint8_t {
 
 extern U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2;
 
+void drawCenteredText(uint8_t y, const char* text);
 void initOled();
 void renderSplash();
 void renderInfo();

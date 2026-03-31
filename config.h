@@ -9,8 +9,8 @@ constexpr uint8_t PIN_STATUS_LED = LED_BUILTIN;
 
 constexpr uint8_t PIN_BTN_LEFT  = 2;
 constexpr uint8_t PIN_BTN_RIGHT = 3;
-constexpr uint8_t PIN_BTN_GAME_LEFT = 4;
-constexpr uint8_t PIN_BTN_GAME_RIGHT = 5;
+constexpr uint8_t PIN_BTN_GAME_UP = 4;
+constexpr uint8_t PIN_BTN_GAME_DOWN = 5;
 constexpr uint8_t PIN_KILL_SWITCH = 6;
 
 

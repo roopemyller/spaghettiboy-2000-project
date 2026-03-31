@@ -6,7 +6,7 @@
 
 U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
-static void drawCenteredText(uint8_t y, const char* text) {
+void drawCenteredText(uint8_t y, const char* text) {
   const int16_t textWidth = (int16_t)u8g2.getStrWidth(text);
   int16_t x = ((int16_t)OLED_WIDTH - textWidth) / 2;
   if (x < 0) {
