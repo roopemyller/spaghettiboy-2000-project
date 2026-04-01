@@ -1,0 +1,25 @@
+@startuml
+
+start
+:Intro screen;
+
+
+repeat
+    switch (is left or right button pressed)
+        case (left button is pressed)
+        :snake game;
+            while (While no navigation button is pressed)
+                :playing game;
+            endwhile
+        case (right button is pressed) 
+        :information;
+            while (While no navigation button is pressed)
+                :show information;
+            endwhile
+        case (no button is pressed)
+    endswitch
+
+repeat while (is kill switch pressed?) is (no) not (yes) 
+stop
+
+@enduml

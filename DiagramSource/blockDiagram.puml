@@ -1,0 +1,34 @@
+@startuml
+
+object arduino
+hide empty members
+
+package sensors {
+    object "temperature/humidity" as ht
+    object LDR
+}
+
+package "User Inputs" as UI {
+    
+    object "button A" as ba
+    object "button B" as bb
+    object "button C" as bc
+    object "button D" as bd
+    object "off switch" as ks
+    
+}
+
+
+
+package output {
+    object "Oled Screen" as oleds
+}
+
+object powersupply
+
+sensors --> arduino
+powersupply --> arduino
+UI --> arduino
+arduino --> output
+
+@enduml
