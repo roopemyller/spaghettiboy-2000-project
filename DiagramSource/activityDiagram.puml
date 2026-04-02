@@ -6,14 +6,14 @@ start
 
 repeat
     switch (is left or right button pressed)
-        case (left button is pressed)
+        case (right button is pressed)
         :snake game;
             while (While no navigation button is pressed)
                 :playing game;
                 while (is off switch active) is (active) 
                 endwhile (deactive)
             endwhile
-        case (right button is pressed) 
+        case (left button is pressed) 
         :information;
             while (While no navigation button is pressed)
                 :show information;
