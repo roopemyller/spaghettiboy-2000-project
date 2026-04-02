@@ -10,16 +10,20 @@ repeat
         :snake game;
             while (While no navigation button is pressed)
                 :playing game;
+                while (is off switch active) is (active) 
+                endwhile (deactive)
             endwhile
         case (right button is pressed) 
         :information;
             while (While no navigation button is pressed)
                 :show information;
+                while (is off switch active) is (active) 
+                endwhile (deactive)
             endwhile
         case (no button is pressed)
     endswitch
+while (is off switch active) is (active) 
+endwhile (deactive)
 
-repeat while (is kill switch pressed?) is (no) not (yes) 
-stop
 
 @enduml
