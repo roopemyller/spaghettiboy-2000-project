@@ -1,18 +1,32 @@
 @startuml
 
 start
-:Intro screen;
-
 
 repeat
+:Intro screen;
+
     switch (is left or right button pressed)
         case (right button is pressed)
         :snake game;
-            while (While no navigation button is pressed)
+        if(start snake game ?) then (yes)  
+            while (While no navigation buttons are pressed) is (not pressed)
                 :playing game;
                 while (is off switch active) is (active) 
                 endwhile (deactive)
-            endwhile
+            endwhile (pressed)
+            
+            
+        else (no)
+            if(left or right navigation button) then (right)
+                
+            else (left)
+                :information;
+                (A)
+                detach
+                break
+            endif
+        endif
+            
         case (left button is pressed) 
         :information;
             while (While no navigation button is pressed)
@@ -20,6 +34,15 @@ repeat
                 while (is off switch active) is (active) 
                 endwhile (deactive)
             endwhile
+        if(left or right navigation button) then (left)
+            
+        else (right)
+            :snake game;
+            (B)
+            detach
+            break
+        endif
+
         case (no button is pressed)
     endswitch
 while (is off switch active) is (active) 
